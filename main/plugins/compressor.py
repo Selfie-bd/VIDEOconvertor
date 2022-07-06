@@ -12,7 +12,7 @@
 #
 #  License can be found in < https://github.com/vasusen-code/VIDEOconvertor/blob/public/LICENSE> .
 
-import asyncio, time, subprocess, re, os, ffmpeg
+import asyncio, time, subprocess, re, os
 
 from datetime import datetime as dt
 from telethon import events
@@ -71,29 +71,14 @@ async def compress(event, msg, ffmpeg_cmd=0, ps_name=None):
     name = '__' + dt.now().isoformat("_", "seconds") + ".mp4"
     os.rename(n, name)
     await edit.edit("Extracting metadata...")
-    vid = ffmpeg.probe(name)
-    codec = vid['streams'][0]['codec_name']
-    hgt = video_metadata(name)["height"]
-    wdt = video_metadata(name)["width"]
+    vid = video_metadata(name)
+    hgt = int(vid['height'])
+    wdt = int(vid['width'])
     if ffmpeg_cmd == 2:
         if hgt == 360 or wdt == 640:
             await log.delete()
             await LOG_END(event, log_end_text)
             await edit.edit("Fast compress cannot be used for this media, try using HEVC!")
-            os.rmdir("encodemedia")
-            return
-    if ffmpeg_cmd == 3:
-        if codec == 'hevc':
-            await log.delete()
-            await LOG_END(event, log_end_text)
-            await edit.edit("The given video is already in H.265 codec.")
-            os.rmdir("encodemedia")
-            return
-    if ffmpeg_cmd == 4:
-        if codec == 'h264':
-            await log.delete()
-            await LOG_END(event, log_end_text)
-            await edit.edit("The given video is already in H.264 codec.")
             os.rmdir("encodemedia")
             return
     FT = time.time()
@@ -104,9 +89,9 @@ async def compress(event, msg, ffmpeg_cmd=0, ps_name=None):
     elif ffmpeg_cmd == 2:
         cmd = f'ffmpeg -hide_banner -loglevel quiet -progress {progress} -i """{name}""" -c:v libx265 -crf 22 -preset ultrafast -s 640x360 -c:a copy -c:s copy """{out}""" -y'
     elif ffmpeg_cmd == 3:
-        cmd = f'ffmpeg -hide_banner -loglevel quiet -progress {progress} -i """{name}""" -preset ultrafast -vcodec libx265 -crf 18 -acodec copy -c:s copy """{out}""" -y'
+        cmd = f'ffmpeg -hide_banner -loglevel quiet -progress {progress} -i """{name}""" -preset faster -vcodec libx265 -crf 22 -acodec copy -c:s copy """{out}""" -y'
     elif ffmpeg_cmd == 4:
-        cmd = f'ffmpeg -hide_banner -loglevel quiet -progress {progress} -i """{name}""" -preset ultrafast -vcodec libx264 -crf 18 -acodec copy -c:s copy """{out}""" -y'
+        cmd = f'ffmpeg -hide_banner -loglevel quiet -progress {progress} -i """{name}""" -preset faster -vcodec libx264 -crf 22 -acodec copy -c:s copy """{out}""" -y'
     try:
         await ffmpeg_progress(cmd, name, progress, FT, edit, ps_name, log=log)
     except Exception as e:
